@@ -1,2 +1,1 @@
 json_database~=0.7
-word2number-i18n
