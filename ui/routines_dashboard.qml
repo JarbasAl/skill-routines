@@ -25,10 +25,10 @@ Mycroft.Delegate {
     property var routinesDashboardModel: sessionData.routines_model
     property var activeRoutines: sessionData.active_routines.routines
     property var inactiveRoutines: sessionData.inactive_routines.routines
-    leftPadding: Mycroft.Units.gridUnit
-    rightPadding: Mycroft.Units.gridUnit
-    topPadding: Mycroft.Units.gridUnit
-    bottomPadding: Mycroft.Units.gridUnit
+    leftPadding: Mycroft.Units.gridUnit * 2
+    rightPadding: Mycroft.Units.gridUnit * 2
+    topPadding: Mycroft.Units.gridUnit * 2
+    bottomPadding: Mycroft.Units.gridUnit * 2
 
     
     function check_if_routine_id_in_active(routineId) {
@@ -446,8 +446,8 @@ Mycroft.Delegate {
             anchors.centerIn: parent
 
             Image {
-                Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.preferredWidth: height
                 Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                 source: Qt.resolvedUrl("images/noroutines.svg")
 
@@ -479,6 +479,16 @@ Mycroft.Delegate {
                 font.bold: false
                 color: Kirigami.Theme.textColor
             }
+            Kirigami.Heading {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                level: 3
+                text: qsTr("Say 'Create a new routine' to add a new routine")
+                font.bold: false
+                color: Kirigami.Theme.textColor
+            }
         }
     }
 
@@ -488,7 +498,6 @@ Mycroft.Delegate {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.margins: Mycroft.Units.gridUnit * 1
         model: routinesDashboardModel
         maximumColumnWidth: Kirigami.Units.gridUnit * 20
         visible: routinesGridView.count != 0 ? 1 : 0

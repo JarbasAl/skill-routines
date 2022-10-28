@@ -207,6 +207,10 @@ class RoutinesSkill(MycroftSkill):
             self.active_routines_storage["routines"] = self.active_routines
             self.active_routines_storage.store()
             self.gui["active_routines"] = self.active_routines_storage["routines"]
+            
+        self.gui["routines_model"] = self.routines_model["routines"]
+        self.gui["active_routines"] = self.active_routines_storage
+        self.gui["inactive_routines"] = self.inactive_routines_storage
 
         self.log.info("Setting up routine events for {}".format(routine["name"]))
         self.log.debug("Routine time: {}".format(routine["time"]))
