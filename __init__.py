@@ -117,7 +117,7 @@ class RoutinesSkill(MycroftSkill):
         self.routines.store()
 
         if self.routines[rid].get("active"):
-            if self.routines[rid] in self.scheduled_routines:
+            if rid in self.scheduled_routines:
                 self.cancel_scheduled_event(rid)
             self.setup_routine_events(self.routines[rid])
 
@@ -247,8 +247,7 @@ class RoutinesSkill(MycroftSkill):
     def get_routine_by_id(self, routine_id):
         return self.routines.get(routine_id)
 
-    @staticmethod
-    def provide_routine_days_options():
+    def provide_routine_days_options(self):
         # TODO - lang support (via LF or resource utils)
         return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -256,13 +255,15 @@ class RoutinesSkill(MycroftSkill):
     def validate_routine_name(utterance):
         if utterance:
             return True
+        raise ValueError("Missing routine name")
 
-    @staticmethod
-    def validate_routine_days(utterance):
+    def validate_routine_days(self, utterance):
         if utterance:
-            for day in RoutinesSkill.provide_routine_days_options():
+            # TODO - lang support
+            for day in self.provide_routine_days_options():
                 if day in utterance:
                     return True
+        raise ValueError("bad routine")
 
     def convert_time_words_to_numbers(self, utterance):
         dt = extract_datetime(utterance, lang=self.lang)
