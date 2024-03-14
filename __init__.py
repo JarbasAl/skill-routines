@@ -20,13 +20,15 @@ from time import sleep
 from json_database import JsonStorage
 from lingua_franca.parse import extract_datetime
 from lingua_franca.time import now_local
-from mycroft.skills.core import MycroftSkill, intent_handler
-from mycroft_bus_client import Message
+from ovos_bus_client.message import Message
+from ovos_workshop.decorators import intent_handler
+from ovos_workshop.skills import OVOSSkill
 
 
-class RoutinesSkill(MycroftSkill):
-    def __init__(self):
-        super(RoutinesSkill, self).__init__(name="RoutinesSkill")
+class RoutinesSkill(OVOSSkill):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.routines_db_path = None
         self.routines = None
         self.scheduled_routines = []
@@ -35,18 +37,28 @@ class RoutinesSkill(MycroftSkill):
         self.routines_db_path = path.join(self.file_system.path, "database")
         makedirs(self.routines_db_path, exist_ok=True)
 
-        self.routines = JsonStorage(path.join(self.routines_db_path, "routines.json"))
+        self.routines = JsonStorage(
+            path.join(self.routines_db_path, "routines.json"))
 
         # GUI Handlers
-        self.gui.register_handler("routine.skill.set.routine.active", self.activate_routine)
-        self.gui.register_handler("routine.skill.set.routine.inactive", self.deactivate_routine)
-        self.gui.register_handler("routine.skill.edit.routine", self.edit_routine)
-        self.gui.register_handler("routine.skill.save.edited.routine", self.save_edited_routine)
-        self.gui.register_handler("routine.skill.delete.routine", self.remove_routine_gui)
-        self.gui.register_handler("routine.skill.add.routine", self.add_routine)
+        self.gui.register_handler("routine.skill.set.routine.active",
+                                  self.activate_routine)
+        self.gui.register_handler("routine.skill.set.routine.inactive",
+                                  self.deactivate_routine)
+        self.gui.register_handler("routine.skill.edit.routine",
+                                  self.edit_routine)
+        self.gui.register_handler("routine.skill.save.edited.routine",
+                                  self.save_edited_routine)
+        self.gui.register_handler("routine.skill.delete.routine",
+                                  self.remove_routine_gui)
+        self.gui.register_handler("routine.skill.add.routine",
+                                  self.add_routine)
 
-        self.schedule_repeating_event(self.check_active_routines_schedule_status, datetime.datetime.now(), 300,
-                                      name="check_routines")
+        self.schedule_repeating_event(
+            self.check_active_routines_schedule_status,
+            datetime.datetime.now(),
+            300,
+            name="check_routines")
         self.load_routines()
 
     @property
@@ -108,11 +120,16 @@ class RoutinesSkill(MycroftSkill):
         edited_routine = message.data["routine"]
         rid = edited_routine["id"]
         self.routines[rid].update({
-            "name": edited_routine["routine_name"],
-            "time": edited_routine["routine_time"],
-            "days": edited_routine["routine_days"],
-            "actions": edited_routine["routine_actions"],
-            "action_sleep_time": edited_routine["routine_sleep_time"]
+            "name":
+                edited_routine["routine_name"],
+            "time":
+                edited_routine["routine_time"],
+            "days":
+                edited_routine["routine_days"],
+            "actions":
+                edited_routine["routine_actions"],
+            "action_sleep_time":
+                edited_routine["routine_sleep_time"]
         })
         self.routines.store()
 
@@ -150,12 +167,17 @@ class RoutinesSkill(MycroftSkill):
         self.log.debug(f"Routine days: {routine['days']}")
 
         if self.check_if_routing_should_run_today(routine):
-            datetime_pass_object = datetime.datetime.strptime(routine["time"], "%H:%M")
+            datetime_pass_object = datetime.datetime.strptime(
+                routine["time"], "%H:%M")
             if routine["id"] not in self.scheduled_routines:
-                self.schedule_event(self.run_routine, datetime_pass_object, data=routine, name=routine["id"])
+                self.schedule_event(self.run_routine,
+                                    datetime_pass_object,
+                                    data=routine,
+                                    name=routine["id"])
                 self.scheduled_routines.append(routine["id"])
         else:
-            self.log.info(f"Routine {routine['id']} is not scheduled to run today")
+            self.log.info(
+                f"Routine {routine['id']} is not scheduled to run today")
 
     @staticmethod
     def check_if_routing_should_run_today(routine):
@@ -174,7 +196,8 @@ class RoutinesSkill(MycroftSkill):
                 sleep(message.data.get("action_sleep_time", 3))
 
     def run_action(self, action):
-        self.bus.emit(Message("recognizer_loop:utterance", {"utterance": action}))
+        self.bus.emit(
+            Message("recognizer_loop:utterance", {"utterance": action}))
 
     #### Voice Interface ####
     @intent_handler("show.routines.dash.intent")
@@ -185,16 +208,19 @@ class RoutinesSkill(MycroftSkill):
     @intent_handler("add.routine.intent")
     def add_routine_by_voice(self, message):
         try:
-            routine_name = self.get_response("routine.name.prompt", num_retries=0)
+            routine_name = self.get_response("routine.name.prompt",
+                                             num_retries=0)
             routine_name_valid = self.validate_routine_name(routine_name)
         except:
             self.speak_dialog("routine.name.error")
             return
 
-        routine_time_words = self.get_response("routine.time.prompt", num_retries=0)
+        routine_time_words = self.get_response("routine.time.prompt",
+                                               num_retries=0)
 
         try:
-            routine_time = self.convert_time_words_to_numbers(routine_time_words)
+            routine_time = self.convert_time_words_to_numbers(
+                routine_time_words)
         except:
             self.speak_dialog("routine.time.error")
             return
@@ -202,8 +228,10 @@ class RoutinesSkill(MycroftSkill):
         try:
             routine_days_list = []
             while True:
-                routine_day = self.ask_selection(self.provide_routine_days_options(),
-                                                 "routine.days.prompt", numeric=True)
+                routine_day = self.ask_selection(
+                    self.provide_routine_days_options(),
+                    "routine.days.prompt",
+                    numeric=True)
                 routine_days_valid = self.validate_routine_days(routine_day)
                 if routine_days_valid:
                     routine_days_list.append(routine_day)
@@ -224,12 +252,14 @@ class RoutinesSkill(MycroftSkill):
 
         routine_sleep_time = "10"
         routine_id = uuid.uuid4().hex
-        routine = {"routine_name": routine_name,
-                   "routine_time": routine_time,
-                   "routine_days": routine_days_list,
-                   "routine_actions": routine_actions,
-                   "routine_id": routine_id,
-                   "routine_sleep_time": routine_sleep_time}
+        routine = {
+            "routine_name": routine_name,
+            "routine_time": routine_time,
+            "routine_days": routine_days_list,
+            "routine_actions": routine_actions,
+            "routine_id": routine_id,
+            "routine_sleep_time": routine_sleep_time
+        }
         self.add_routine(Message("add.routine", {"routine": routine}))
 
     @intent_handler("delete.routine.intent")
@@ -249,7 +279,10 @@ class RoutinesSkill(MycroftSkill):
 
     def provide_routine_days_options(self):
         # TODO - lang support (via LF or resource utils)
-        return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        return [
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+            "Sunday"
+        ]
 
     @staticmethod
     def validate_routine_name(utterance):
@@ -272,7 +305,3 @@ class RoutinesSkill(MycroftSkill):
             minutes = dt[0].minute
             return "{:02d}:{:02d}".format(hours, minutes)
         raise RuntimeError(f"Failed to extract a date from {utterance}")
-
-
-def create_skill():
-    return RoutinesSkill()
